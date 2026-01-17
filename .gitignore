@@ -1,0 +1,14 @@
+# envs
+.env
+.venv
+
+# pytest
+.coverage
+.pytest_cache
+
+# dev
+.vscode
+.ruff_cache
+
+# bytecode
+__pycache__

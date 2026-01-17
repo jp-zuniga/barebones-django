@@ -1,0 +1,17 @@
+version: 2
+
+updates:
+  - package-ecosystem: "github-actions"
+    assignees:
+      - "jp-zuniga"
+
+    directory: "/"
+    labels:
+      - "dependencies"
+      - "gh-actions"
+
+    schedule:
+      interval: "cron"
+      cronjob: "0 6 1 * *"
+
+    target-branch: "api"

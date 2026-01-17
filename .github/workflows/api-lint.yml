@@ -1,0 +1,38 @@
+name: lint-api
+
+on:
+  push:
+    branches:
+      - "*"
+    paths:
+      - "*.py"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "*.py"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ban-api
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: ruff check
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "check --unsafe-fixes"
+          version: "latest"
+
+      - name: ruff format
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "format --check"
+          version: "latest"

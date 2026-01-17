@@ -1,0 +1,96 @@
+name: test-api
+
+on:
+  push:
+    branches:
+      - "*"
+    paths:
+      - "*.py"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "*.py"
+      - "*.lock"
+
+concurrency:
+  cancel-in-progress: true
+  group: api-tests-${{ github.ref }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ban-api
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          install_url: https://nixos.org/nix/install
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: postgres setup
+        run: |
+          cat << 'EOF' > pg-setup.sh
+
+          set -eux
+
+          export PGDATA="${RUNNER_TEMP}/pgdata"
+          export PGLOG="${RUNNER_TEMP}/pg.log"
+          export PGSOCK="${RUNNER_TEMP}/pgsock"
+          export PGPORT="5433"
+
+          mkdir -p "${PGSOCK}"
+
+          initdb -D "${PGDATA}" -A trust -U postgres
+
+          {
+            echo "listen_addresses = '""'"
+            echo "unix_socket_directories = '"${PGSOCK}"'"
+            echo "port = ${PGPORT}"
+          } >> "${PGDATA}/postgresql.conf"
+
+          echo "local all all trust" >> "${PGDATA}/pg_hba.conf"
+
+          pg_ctl -D "${PGDATA}" -l "${PGLOG}" start
+          pg_isready -h "${PGSOCK}" -p "${PGPORT}" -t 20
+
+          echo "DATABASE_URL=postgresql://postgres@/postgres?host=${PGSOCK}&port=${PGPORT}" >> $GITHUB_ENV
+          echo "DEBUG=False" >> $GITHUB_ENV
+          echo "SECRET_KEY=testing-key" >> $GITHUB_ENV
+
+          EOF
+
+          chmod +x pg-setup.sh
+
+          nix develop .#test --command bash -c "./pg-setup.sh"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          ignore-nothing-to-cache: true
+          version: "latest"
+
+      - name: sync environment
+        run: uv sync --frozen
+
+      - name: run tests
+        run: nix develop .#test --command bash -c "just migrate && just test-ci"
+
+      - name: show postgres logs
+        if: failure()
+        run: tail -n 500 "${RUNNER_TEMP}/pg.log" || true
+
+      - name: stop postgres
+        if: always()
+        run: nix develop .#test --command bash -c "pg_ctl -D '${RUNNER_TEMP}/pgdata' -m fast stop || true"

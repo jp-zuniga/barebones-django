@@ -1,0 +1,43 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+
+  "build": {
+    "buildCommand": "uv sync --frozen --no-dev && uv run python src/manage.py collectstatic --noinput",
+    "builder": "RAILPACK",
+    "dockerfilePath": null,
+    "nixpacksConfigPath": null,
+    "nixpacksPlan": null,
+    "nixpacksVersion": null,
+    "railpackVersion": null,
+    "watchPatterns": [
+      "src/**",
+      "railway.json"
+    ]
+  },
+  "deploy": {
+    "cronSchedule": null,
+    "overlapSeconds": 20,
+    "drainingSeconds": 10,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 60,
+    "limitOverride": {
+      "containers": {
+        "cpu": 2,
+        "memoryBytes": 2000000000
+      }
+    },
+    "multiRegionConfig": {
+      "us-east4-eqdc4a": {
+        "numReplicas": 1
+      }
+    },
+    "numReplicas": 1,
+    "preDeployCommand": "uv run src/manage.py makemigrations && uv run src/manage.py migrate",
+    "restartPolicyMaxRetries": 3,
+    "restartPolicyType": "ON_FAILURE",
+    "runtime": "V2",
+    "sleepApplication": false,
+    "startCommand": "uv run gunicorn core.wsgi:application --chdir src --bind 0.0.0.0:$PORT",
+    "useLegacyStacker": false
+  }
+}
