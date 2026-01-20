@@ -14,6 +14,10 @@ if TYPE_CHECKING:
     from rest_framework.views import APIView
 
 
+def simplify_model_name(name: str) -> str:
+    return name.removesuffix("List").strip().lower().replace(" ", "-")
+
+
 class FuzzySearchFilter(SearchFilter):
     search_param: str = "search"
     field_param: str = "search_in"
@@ -34,14 +38,7 @@ class FuzzySearchFilter(SearchFilter):
         allowed_fields: list = getattr(view, "search_fields", [])
 
         if target_field is not None and target_field not in allowed_fields:
-            model: str = (
-                view.get_view_name()
-                .removesuffix("List")
-                .strip()
-                .lower()
-                .replace(" ", "-")
-            )
-
+            model: str = simplify_model_name(view.get_view_name())
             msg: str = f"`{model}` no tiene un atributo nombrado `{target_field}`."
             raise BadRequestError(msg)
 
