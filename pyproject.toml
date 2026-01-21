@@ -15,7 +15,7 @@
         "whitenoise>=6.11.0",
     ]
 
-    description     = "Barebones Django API."
+    description     = "Django API."
     name            = "api"
     readme          = "README.md"
     requires-python = ">=3.13.9"
