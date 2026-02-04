@@ -14,4 +14,4 @@ updates:
       interval: "cron"
       cronjob: "0 6 1 * *"
 
-    target-branch: "api"
+    target-branch: "main"
